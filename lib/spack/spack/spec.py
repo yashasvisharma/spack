@@ -2773,6 +2773,7 @@ class Spec(object):
         """Prints out this spec and its dependencies, tree-formatted
            with indentation."""
         color = kwargs.pop('color', False)
+        concreteness = kwargs.pop('concreteness', False)
         depth = kwargs.pop('depth', False)
         hashes = kwargs.pop('hashes', False)
         hlen = kwargs.pop('hashlen', None)
@@ -2808,6 +2809,9 @@ class Spec(object):
 
             if hashes:
                 out += colorize('@K{%s}  ', color=color) % node.dag_hash(hlen)
+
+            if concreteness:
+                out += 'C  ' if node._concrete else '   '
 
             if show_types:
                 out += '['
