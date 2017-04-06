@@ -1512,7 +1512,7 @@ class Spec(object):
         if visited is None:
             visited = set()
 
-        if self.name in visited:
+        if self.name in visited or self._hash or self._concrete:
             return False
 
         changed = False
