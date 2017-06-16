@@ -66,11 +66,26 @@ class Variant(object):
         self.default = default
         self.description = str(description)
 
+        self.values = None
+        if values is any:
+            # 'any' is a special case to make it easy to say any value is ok
+            self.single_value_validator = lambda x: True
+
+        elif isinstance(values, type):
+            # supplying a type means any value *of that type*
+            def isa_type(v):
+                try:
+                    values(v)
+                    return True
+                except ValueError:
+                    return False
+            self.single_value_validator = values
+
         if callable(values):
             # If 'values' is a callable, assume it is a single value
             # validator and reset the values to be explicit during debug
             self.single_value_validator = values
-            self.values = None
+
         else:
             # Otherwise assume values is the set of allowed explicit values
             self.values = tuple(values)
