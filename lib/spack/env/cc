@@ -229,7 +229,14 @@ fi
 input_command="$@"
 args=()
 
-# Parse arguments into separate categories
+#
+# Now do real parsing of the command line args, trying hard to keep
+# non-rpath linker arguments in the proper order w.r.t. other command
+# line arguments.  This is important for things like groups.
+#
+# The various categories will be recombined with compiler flags into 
+# args variable later.
+#
 includes=()
 libraries=()
 libs=()
@@ -327,45 +334,44 @@ case "$mode" in cc|ccld)
 esac
 
 # Read spack dependencies from the path environment variable
-# TODO: Flip order where/if necessary
 IFS=':' read -ra deps <<< "$SPACK_DEPENDENCIES"
 for dep in "${deps[@]}"; do
     # Prepend include directories
     if [[ -d $dep/include ]]; then
         if [[ $mode == cpp || $mode == cc || $mode == as || $mode == ccld ]]; then
-            includes=("$dep/include" "${includes[@]}")
+            includes=("${includes[@]}" "$dep/include")
         fi
     fi
 
     # Prepend lib and RPATH directories
     if [[ -d $dep/lib ]]; then
         if [[ $SPACK_RPATH_DEPS == *$dep* ]]; then
-            $add_rpaths && rpaths=("$dep/lib" "${rpaths[@]}")
+            $add_rpaths && rpaths=("${rpaths[@]}" "$dep/lib")
         fi
         if [[ $SPACK_LINK_DEPS == *$dep* ]]; then
-            libraries=("$dep/lib" "${libraries[@]}")
+            libraries=("${libraries[@]}" "$dep/lib")
         fi
     fi
 
     # Prepend lib64 and RPATH directories
     if [[ -d $dep/lib64 ]]; then
         if [[ $SPACK_RPATH_DEPS == *$dep* ]]; then
-            $add_rpaths && rpaths=("$dep/lib64" "${rpaths[@]}")
+            $add_rpaths && rpaths+=("$dep/lib64")
         fi
         if [[ $SPACK_LINK_DEPS == *$dep* ]]; then
-            libraries=("$dep/lib64" "${libraries[@]}")
+            libraries+=("$dep/lib64")
         fi
     fi
 done
 
 # Include all -L's and prefix/whatever dirs in rpath
-$add_rpaths && rpaths=("$rpath$SPACK_PREFIX/lib64" "${rpaths[@]}")
-$add_rpaths && rpaths=("$rpath$SPACK_PREFIX/lib"   "${rpaths[@]}")
+$add_rpaths && rpaths+=("$SPACK_PREFIX/lib")
+$add_rpaths && rpaths+=("$SPACK_PREFIX/lib64")
 
 # Set extra RPATHs
 IFS=':' read -ra extra_rpaths <<< "$SPACK_COMPILER_EXTRA_RPATHS"
 for extra_rpath in "${extra_rpaths[@]}"; do
-    $add_rpaths && rpaths=("$extra_rpath" "${rpaths[@]}")
+    $add_rpaths && rpaths+=("$extra_rpath")
 done
 
 # Add SPACK_LDLIBS to args
@@ -374,7 +380,7 @@ case "$mode" in
         libs=("${libs[@]}" ${SPACK_LDLIBS[@]}) ;;
 esac
 
-# Regather separate categories
+# Put the arguments together
 for dir in "${includes[@]}";  do args+=("-I$dir"); done
 args+=("${other_args[@]}")
 for dir in "${libraries[@]}"; do args+=("-L$dir"); done
@@ -389,7 +395,8 @@ elif [ "$mode" = ld ]; then
     done
 fi
 
-full_command=("$command" "${args[@]}")
+full_command=("$command")
+full_command+=("${args[@]}")
 
 # In test command mode, write out full command for Spack tests.
 if [[ $SPACK_TEST_COMMAND == dump-args ]]; then
