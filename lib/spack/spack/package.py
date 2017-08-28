@@ -821,8 +821,10 @@ class PackageBase(with_metaclass(PackageMeta, object)):
 
     def dependencies_of_type(self, *deptypes):
         """Get subset of the dependencies with certain types."""
-        return dict((name, conds) for name, conds in self.dependencies.items()
-                    if any(d in self.dependency_types[name] for d in deptypes))
+        return dict(
+            (name, conds) for name, conds in self.dependencies.items()
+            if any(dt in self.dependencies[name][cond].type
+                   for cond in conds for dt in deptypes))
 
     @property
     def extendee_spec(self):
@@ -1957,7 +1959,7 @@ def dump_packages(spec, path):
     # Note that we copy them in as they are in the *install* directory
     # NOT as they are in the repository, because we want a snapshot of
     # how *this* particular build was done.
-    for node in spec.traverse(deptype=spack.alldeps):
+    for node in spec.traverse(deptype=all):
         if node is not spec:
             # Locate the dependency package in the install tree and find
             # its provenance information.

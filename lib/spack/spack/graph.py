@@ -69,6 +69,7 @@ from llnl.util.lang import *
 from llnl.util.tty.color import *
 
 from spack.spec import *
+from spack.dependency import *
 
 __all__ = ['topological_sort', 'graph_ascii', 'AsciiGraph', 'graph_dot']
 
@@ -142,7 +143,7 @@ class AsciiGraph(object):
         self.node_character = 'o'
         self.debug = False
         self.indent = 0
-        self.deptype = alldeps
+        self.deptype = all_deptypes
 
         # These are colors in the order they'll be used for edges.
         # See llnl.util.tty.color for details on color characters.
@@ -518,7 +519,7 @@ def graph_dot(specs, deptype=None, static=False, out=None):
         out = sys.stdout
 
     if deptype is None:
-        deptype = alldeps
+        deptype = all_deptypes
 
     out.write('digraph G {\n')
     out.write('  labelloc = "b"\n')
