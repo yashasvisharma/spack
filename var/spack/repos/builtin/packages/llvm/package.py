@@ -73,6 +73,8 @@ class Llvm(CMakePackage):
     variant('build_type', default='Release',
             description='CMake build type',
             values=('Debug', 'Release', 'RelWithDebInfo', 'MinSizeRel'))
+    variant('flang', default=False,
+            description="Add support for flang Fortran compiler")
 
     # Build dependency
     depends_on('cmake@3.4.3:', type='build')
@@ -344,6 +346,13 @@ class Llvm(CMakePackage):
 
     # Github issue #4986
     patch('llvm_gcc7.patch', when='@4.0.0:4.0.1+lldb %gcc@7.0:')
+
+    patch('https://github.com/llvm-mirror/clang/pull/33.diff',
+        when='@4.0:4.0.9999 +flang',
+        level=1, md5='bfe81f7dea6c30211d86d7448074f30d',
+        workdir='tools/clang')
+    conflicts('+flang', when='@:3.9.99999')
+    conflicts('+flang', when='@5:')
 
     def setup_environment(self, spack_env, run_env):
         spack_env.append_flags('CXXFLAGS', self.compiler.cxx11_flag)
