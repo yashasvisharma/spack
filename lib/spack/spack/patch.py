@@ -51,7 +51,7 @@ class Patch(object):
     """
 
     @staticmethod
-    def create(pkg, path_or_url, level, **kwargs):
+    def create(pkg, path_or_url, level, workdir, **kwargs):
         """
         Factory method that creates an instance of some class derived from
         Patch
@@ -60,23 +60,25 @@ class Patch(object):
             pkg: package that needs to be patched
             path_or_url: path or url where the patch is found
             level: patch level
+            workdir: dir to change to before applying the patch
 
         Returns:
             instance of some Patch class
         """
         # Check if we are dealing with a URL
         if '://' in path_or_url:
-            return UrlPatch(pkg, path_or_url, level, **kwargs)
+            return UrlPatch(pkg, path_or_url, level, workdir, **kwargs)
         # Assume patches are stored in the repository
-        return FilePatch(pkg, path_or_url, level)
+        return FilePatch(pkg, path_or_url, level, workdir)
 
-    def __init__(self, pkg, path_or_url, level):
+    def __init__(self, pkg, path_or_url, level, workdir):
         # Check on level (must be an integer > 0)
         if not isinstance(level, int) or not level >= 0:
             raise ValueError("Patch level needs to be a non-negative integer.")
         # Attributes shared by all patch subclasses
         self.path_or_url = path_or_url
         self.level = level
+        self.workdir = workdir
         # self.path needs to be computed by derived classes
         # before a call to apply
         self.path = None
@@ -92,15 +94,18 @@ class Patch(object):
             stage: stage for the package that needs to be patched
         """
         stage.chdir_to_source()
+        if self.workdir:
+            os.chdir(self.workdir)
         # Use -N to allow the same patches to be applied multiple times.
         _patch = which("patch", required=True)
         _patch('-s', '-p', str(self.level), '-i', self.path)
+        stage.chdir_to_source()
 
 
 class FilePatch(Patch):
     """Describes a patch that is retrieved from a file in the repository"""
-    def __init__(self, pkg, path_or_url, level):
-        super(FilePatch, self).__init__(pkg, path_or_url, level)
+    def __init__(self, pkg, path_or_url, level, workdir):
+        super(FilePatch, self).__init__(pkg, path_or_url, level, workdir)
 
         pkg_dir = os.path.dirname(absolute_path_for_package(pkg))
         self.path = join_path(pkg_dir, path_or_url)
@@ -110,8 +115,8 @@ class FilePatch(Patch):
 
 class UrlPatch(Patch):
     """Describes a patch that is retrieved from a URL"""
-    def __init__(self, pkg, path_or_url, level, **kwargs):
-        super(UrlPatch, self).__init__(pkg, path_or_url, level)
+    def __init__(self, pkg, path_or_url, level, workdir, **kwargs):
+        super(UrlPatch, self).__init__(pkg, path_or_url, level, workdir)
         self.url = path_or_url
         self.md5 = kwargs.get('md5')
 

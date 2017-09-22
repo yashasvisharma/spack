@@ -80,5 +80,5 @@ def test_url_patch_expansion(mock_stage, filename, md5):
 
     m = sys.modules['spack.patch']
     url = 'file://' + filename
-    patch = m.Patch.create(None, url, 0, md5=md5)
+    patch = m.Patch.create(None, url, 0, workdir=".", md5=md5)
     patch.apply(mock_stage)

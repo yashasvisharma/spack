@@ -352,7 +352,7 @@ def provides(*specs, **kwargs):
 
 
 @directive('patches')
-def patch(url_or_filename, level=1, when=None, **kwargs):
+def patch(url_or_filename, level=1, when=None, workdir=None, **kwargs):
     """Packages can declare patches to apply to source.  You can
     optionally provide a when spec to indicate that a particular
     patch should only be applied when the package's spec meets
@@ -363,6 +363,7 @@ def patch(url_or_filename, level=1, when=None, **kwargs):
         level (int): patch level (as in the patch shell command)
         when (Spec): optional anonymous spec that specifies when to apply
             the patch
+        workdir (str): dir to change to before applying
         **kwargs: the following list of keywords is supported
 
             - md5 (str): md5 sum of the patch (used to verify the file
@@ -375,7 +376,8 @@ def patch(url_or_filename, level=1, when=None, **kwargs):
         cur_patches = pkg.patches.setdefault(when_spec, [])
         # if this spec is identical to some other, then append this
         # patch to the existing list.
-        cur_patches.append(Patch.create(pkg, url_or_filename, level, **kwargs))
+        cur_patches.append(Patch.create(pkg, url_or_filename, level,
+                                        workdir, **kwargs))
     return _execute
 
 
