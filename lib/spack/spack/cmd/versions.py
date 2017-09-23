@@ -27,6 +27,7 @@ from __future__ import print_function
 from llnl.util.tty.colify import colify
 import llnl.util.tty as tty
 import spack
+from spack.util.web import fetch_remote_package_versions
 
 description = "list available versions of a package"
 section = "packaging"
@@ -42,7 +43,7 @@ def versions(parser, args):
     pkg = spack.repo.get(args.package)
 
     safe_versions = pkg.versions
-    fetched_versions = pkg.fetch_remote_versions()
+    fetched_versions = fetch_remote_package_versions(pkg)
     remote_versions = set(fetched_versions).difference(safe_versions)
 
     tty.msg("Safe versions (already checksummed):")
